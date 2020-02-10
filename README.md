@@ -34,7 +34,7 @@ misc:
 ```
 python luxmedSnip.py -c /path/to/my_favourite_surgeon.yml
 ```
-3) or run it with default settings (Windows)
+or just run it with default settings (Windows)
 ```
 python luxmedSnip.py
 ```
