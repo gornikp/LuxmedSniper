@@ -39,3 +39,5 @@ or just run it with default settings (Windows)
 python luxmedSnip.py
 ```
 3) Wait for new appointment notifications in your pushbullet app on mobile :)!
+
+4) All thanks to OP:https://github.com/pawliczka/LuxmedSniper .If not that repo I would still be checking their site every 5 minutes. xD
