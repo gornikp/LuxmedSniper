@@ -1,11 +1,15 @@
 # LuxmedSniper
 LUX MED appointments sniper
 =======================================
-Simple tool to notify about available slot in LUX MED medical care service using pushover notifications.
+Simple tool to notify about available slot in LUX MED medical care service using pushover notifications. I've changed it slightly to youse Pushbullet since pushover has only a 7 day free trial. 
 
 How to use LuxmedSniper?
 --------------------
-First of all create virtualenv and install python requirements from requirements.txt
+
+0) Install all requirements for python
+```
+pip install -r requirements.txt
+```
 
 1) For each specialist create configuration file (yaml format) and save it for example as my_favourite_surgeon.yml:
 ```
@@ -26,8 +30,12 @@ misc:
   notifydb: ./surgeon_data # State file used to remember which notifications has been sent already
 ```
 
-2) Run it
+2) Run it (Windows)
 ```
-nohup python3 luxmedSnip.py -c /path/to/my_favourite_surgeon.yml &
+python luxmedSnip.py -c /path/to/my_favourite_surgeon.yml
 ```
-3) Wait for new appointment notifications in your pushover app on mobile :)!
+3) or run it with default settings (Windows)
+```
+python luxmedSnip.py
+```
+3) Wait for new appointment notifications in your pushbullet app on mobile :)!

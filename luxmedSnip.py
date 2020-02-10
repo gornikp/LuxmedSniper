@@ -6,7 +6,7 @@ import coloredlogs
 import logging
 import os
 import datetime
-import pushover
+from pushbullet import Pushbullet
 import shelve
 import schedule
 import time
@@ -30,8 +30,7 @@ class LuxMedSniper:
         self._loadConfiguration(configuration_file)
         self._createSession()
         self._logIn()
-        pushover.init(self.config['pushover']['api_token'])
-        self.pushoverClient = pushover.Client(self.config['pushover']['user_key'])
+        self.pb = Pushbullet(self.config['pushbullet']['api_key'])
 
     def _createSession(self):
         self.session = requests.session()
@@ -152,8 +151,7 @@ class LuxMedSniper:
         db.close()
 
     def _sendNotification(self, appointment):
-        self.pushoverClient.send_message(self.config['pushover']['message_template'].format(
-            **appointment, title=self.config['pushover']['title']))
+        self.pb.push_note(self.config['pushbullet']['title'], self.config['pushbullet']['message_template'].format(**appointment))
 
     def _isAlreadyKnown(self, appointment):
         db = shelve.open(self.config['misc']['notifydb'])
