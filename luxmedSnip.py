@@ -10,6 +10,8 @@ from pushbullet import Pushbullet
 import shelve
 import schedule
 import time
+import re
+import sys
 
 # Setup logging
 coloredlogs.install(level="INFO")
@@ -21,6 +23,7 @@ class LuxMedSniper:
     LUXMED_LOGOUT_URL = 'https://portalpacjenta.luxmed.pl/PatientPortal/Account/LogOn'
     MAIN_PAGE_URL = 'https://portalpacjenta.luxmed.pl/PatientPortal'
     REQUEST_RESERVATION_URL = 'https://portalpacjenta.luxmed.pl/PatientPortal/Reservations/Reservation/PartialSearch'
+    VISITS_PAGE_URL= 'https://portalpacjenta.luxmed.pl/PatientPortal/Reservations/Visits/GetVisitsAjax?source=0&fromDate={FromDate}&toDate={ToDate}' # &toDate=14-03-2020&fromDate=14-01-2020
 
     def __init__(self, configuration_file="luxmedSniper.yaml"):
         self.log = logging.getLogger("LuxMedSniper")
@@ -66,6 +69,20 @@ class LuxMedSniper:
         self.log.info("Successfully logged in! (RequestVerificationToken: {token}".format(
             token=self.requestVerificationToken
         ))
+
+    def _parseBookedVisits(self, page_data):
+        s = BeautifulSoup(page_data, "html.parser")
+        appointments = []
+        visits = s.find('li', {"id": "bookedReservationsList"}).findAll('div', {"class": "item"})
+        for visit in visits:
+            visitDescription = visit.find('div', {'class': 'description'})
+            expression = re.compile('([a-zA-Z].*)\\r')
+            doctorName = visitDescription.find('h4').getText().strip()
+            serviceName = expression.match(visitDescription.find('p').getText().strip()).group(1)
+            appointments.append(
+                { 'DoctorName': doctorName,
+                  'SpecialtyName': serviceName })
+        return appointments
 
     def _parseVisits(self, page_data):
         s = BeautifulSoup(page_data, "html.parser")
@@ -128,8 +145,17 @@ class LuxMedSniper:
         r = self.session.post(self.REQUEST_RESERVATION_URL, data)
         return self._parseVisits(r.text)
 
+    def _getBookedAppointments(self):
+        data = {
+            "FromDate": datetime.datetime.now().strftime("%d.%m.%Y"),
+            "ToDate": (datetime.datetime.now() + datetime.timedelta(days=self.config['luxmedsniper']['lookup_time_days'])).strftime("%d.%m.%Y")}
+
+        r = self.session.get(self.VISITS_PAGE_URL.format(**data))
+        return self._parseBookedVisits(r.text)
+
     def check(self):
         appointments = self._getAppointments()
+        bookedAppointments = self._getBookedAppointments()
         if not appointments:
             self.log.info("No appointments found.")
             return
@@ -137,6 +163,9 @@ class LuxMedSniper:
             self.log.info(
                 "Appointment found! {AppointmentDate} at {ClinicPublicName} - {DoctorName} ({SpecialtyName}) {AdditionalInfo}".format(
                     **appointment))
+            if not self._isAlreadyBooked(appointment, bookedAppointments):
+                self.log.info('Appointment already booked')
+                sys.exit(0)
             if not self._isAlreadyKnown(appointment):
                 self._addToDatabase(appointment)
                 self._sendNotification(appointment)
@@ -159,6 +188,11 @@ class LuxMedSniper:
         db.close()
         if appointment['AppointmentDate'] in notifications:
             return True
+        return False
+
+    def _isAlreadyBooked(self, appointment, bookedAppointments):
+        for bookedAppointment in bookedAppointments:
+            return bookedAppointment['DoctorName'] == appointment['DoctorName'] and bookedAppointment['SpecialtyName'] == appointment['SpecialtyName']
         return False
 
 def work(config):

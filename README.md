@@ -3,6 +3,9 @@ LUX MED appointments sniper
 =======================================
 Simple tool to notify about available slot in LUX MED medical care service using pushover notifications. I've changed it slightly to youse Pushbullet since pushover has only a 7 day free trial. 
 
+# Update 1
+Added auto kill-switch. If you book an appointment for a given doctor & service it will stop the script from executing and you won't receive any new notifications :)
+
 How to use LuxmedSniper?
 --------------------
 
